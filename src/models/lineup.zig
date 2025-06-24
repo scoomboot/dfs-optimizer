@@ -70,29 +70,57 @@ pub const Lineup = struct {
             return false;
         }
 
-        // Check team diversity constraint (minimum 2 teams)
-        return self.hasTeamDiversity();
+        // Check team diversity constraint (minimum 2 teams) and max 8 per team
+        if (!self.hasTeamDiversity()) {
+            return false;
+        }
+        
+        // Check for duplicate players
+        if (!self.hasNoDuplicatePlayers()) {
+            return false;
+        }
+        
+        // Check player availability (no bye weeks, no OUT players)
+        if (!self.hasAllPlayersAvailable()) {
+            return false;
+        }
+        
+        return true;
     }
 
     pub fn isSalaryValid(self: Lineup) bool {
         return self.total_salary <= 50000;
     }
+    
+    pub fn isSalaryExact(self: Lineup) bool {
+        return self.total_salary == 50000;
+    }
 
     pub fn hasTeamDiversity(self: Lineup) bool {
         var unique_teams: u8 = 0;
         var seen_teams: [32][]const u8 = undefined; // Max 32 NFL teams
+        var team_counts: [32]u8 = std.mem.zeroes([32]u8);
         
         for (self.players) |p| {
             var found = false;
-            for (seen_teams[0..unique_teams]) |team| {
+            var team_index: usize = 0;
+            for (seen_teams[0..unique_teams], 0..) |team, i| {
                 if (std.mem.eql(u8, team, p.team)) {
                     found = true;
+                    team_index = i;
                     break;
                 }
             }
             if (!found) {
                 seen_teams[unique_teams] = p.team;
+                team_index = unique_teams;
                 unique_teams += 1;
+            }
+            team_counts[team_index] += 1;
+            
+            // Check max 8 players per team constraint
+            if (team_counts[team_index] > 8) {
+                return false;
             }
         }
         
@@ -121,6 +149,26 @@ pub const Lineup = struct {
         return false;
     }
 
+    pub fn hasNoDuplicatePlayers(self: Lineup) bool {
+        for (self.players, 0..) |player1, i| {
+            for (self.players[i+1..]) |player2| {
+                if (std.mem.eql(u8, player1.id, player2.id)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    pub fn hasAllPlayersAvailable(self: Lineup) bool {
+        for (self.players) |p| {
+            if (!p.isAvailable()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     pub fn pointsPerDollar(self: Lineup) f64 {
         if (self.total_salary == 0) return 0.0;
         return self.projected_points / @as(f64, @floatFromInt(self.total_salary));
@@ -335,4 +383,136 @@ test "Lineup points per dollar calculation" {
 
     const ppd = lineup.pointsPerDollar();
     try std.testing.expect(ppd == 0.003); // 135.0 / 45000 = 0.003
+}
+
+test "Lineup max players per team constraint" {
+    const allocator = std.testing.allocator;
+
+    // Invalid lineup: 9 players from same team (exceeds max 8)
+    const invalid_players = [9]Player{
+        Player.init("1", "QB", .QB, 5000, 15.0, "KC", "LV", null),
+        Player.init("2", "RB1", .RB, 4000, 10.0, "KC", "LV", null),
+        Player.init("3", "RB2", .RB, 4000, 10.0, "KC", "LV", null),
+        Player.init("4", "WR1", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("6", "WR3", .WR, 4000, 10.0, "KC", "LV", null),
+        Player.init("7", "TE", .TE, 4000, 8.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 4000, 8.0, "KC", "LV", null),
+        Player.init("9", "DST", .DST, 3000, 8.0, "KC", "LV", null),
+    };
+    
+    var invalid_lineup = try Lineup.init(invalid_players, allocator);
+    defer invalid_lineup.deinit(allocator);
+
+    try std.testing.expect(!invalid_lineup.isValidRoster()); // Should fail due to 9 players from same team
+    try std.testing.expect(!invalid_lineup.hasTeamDiversity()); // Should fail team diversity
+}
+
+test "Lineup duplicate player prevention" {
+    const allocator = std.testing.allocator;
+
+    // Invalid lineup: duplicate player IDs
+    const duplicate_players = [9]Player{
+        Player.init("1", "QB", .QB, 5000, 15.0, "KC", "LV", null),
+        Player.init("1", "RB1", .RB, 4000, 10.0, "KC", "LV", null), // Duplicate ID
+        Player.init("3", "RB2", .RB, 4000, 10.0, "DAL", "NYG", null),
+        Player.init("4", "WR1", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 5000, 12.0, "DAL", "NYG", null),
+        Player.init("6", "WR3", .WR, 4000, 10.0, "MIA", "BUF", null),
+        Player.init("7", "TE", .TE, 4000, 8.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 4000, 8.0, "MIA", "BUF", null),
+        Player.init("9", "DST", .DST, 3000, 8.0, "MIA", "BUF", null),
+    };
+    
+    var duplicate_lineup = try Lineup.init(duplicate_players, allocator);
+    defer duplicate_lineup.deinit(allocator);
+
+    try std.testing.expect(!duplicate_lineup.isValidRoster()); // Should fail due to duplicate players
+    try std.testing.expect(!duplicate_lineup.hasNoDuplicatePlayers()); // Should detect duplicates
+}
+
+test "Lineup player availability validation" {
+    const allocator = std.testing.allocator;
+
+    // Invalid lineup: contains OUT player
+    const unavailable_players = [9]Player{
+        player.Player.initWithStatus("1", "QB", .QB, 5000, 15.0, "KC", "LV", null, .OUT, false), // OUT player
+        Player.init("2", "RB1", .RB, 4000, 10.0, "KC", "LV", null),
+        Player.init("3", "RB2", .RB, 4000, 10.0, "DAL", "NYG", null),
+        Player.init("4", "WR1", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 5000, 12.0, "DAL", "NYG", null),
+        Player.init("6", "WR3", .WR, 4000, 10.0, "MIA", "BUF", null),
+        Player.init("7", "TE", .TE, 4000, 8.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 4000, 8.0, "MIA", "BUF", null),
+        Player.init("9", "DST", .DST, 3000, 8.0, "MIA", "BUF", null),
+    };
+    
+    var unavailable_lineup = try Lineup.init(unavailable_players, allocator);
+    defer unavailable_lineup.deinit(allocator);
+
+    try std.testing.expect(!unavailable_lineup.isValidRoster()); // Should fail due to OUT player
+    try std.testing.expect(!unavailable_lineup.hasAllPlayersAvailable()); // Should detect unavailable player
+    
+    // Test bye week player
+    const bye_players = [9]Player{
+        player.Player.initWithStatus("1", "QB", .QB, 5000, 15.0, "KC", "LV", null, .ACTIVE, true), // On bye
+        Player.init("2", "RB1", .RB, 4000, 10.0, "KC", "LV", null),
+        Player.init("3", "RB2", .RB, 4000, 10.0, "DAL", "NYG", null),
+        Player.init("4", "WR1", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 5000, 12.0, "DAL", "NYG", null),
+        Player.init("6", "WR3", .WR, 4000, 10.0, "MIA", "BUF", null),
+        Player.init("7", "TE", .TE, 4000, 8.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 4000, 8.0, "MIA", "BUF", null),
+        Player.init("9", "DST", .DST, 3000, 8.0, "MIA", "BUF", null),
+    };
+    
+    var bye_lineup = try Lineup.init(bye_players, allocator);
+    defer bye_lineup.deinit(allocator);
+
+    try std.testing.expect(!bye_lineup.isValidRoster()); // Should fail due to bye week player
+    try std.testing.expect(!bye_lineup.hasAllPlayersAvailable()); // Should detect bye week player
+}
+
+test "Lineup exact salary cap validation" {
+    const allocator = std.testing.allocator;
+
+    // Test exact $50k salary
+    const exact_salary_players = [9]Player{
+        Player.init("1", "QB", .QB, 8000, 20.0, "KC", "LV", null),
+        Player.init("2", "RB1", .RB, 7000, 15.0, "KC", "LV", null),
+        Player.init("3", "RB2", .RB, 6000, 12.0, "DAL", "NYG", null),
+        Player.init("4", "WR1", .WR, 7500, 16.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 6500, 14.0, "DAL", "NYG", null),
+        Player.init("6", "WR3", .WR, 5000, 11.0, "MIA", "BUF", null),
+        Player.init("7", "TE", .TE, 4500, 9.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 3000, 7.0, "MIA", "BUF", null),
+        Player.init("9", "DST", .DST, 2500, 6.0, "MIA", "BUF", null),
+    };
+    
+    var exact_lineup = try Lineup.init(exact_salary_players, allocator);
+    defer exact_lineup.deinit(allocator);
+
+    try std.testing.expect(exact_lineup.total_salary == 50000);
+    try std.testing.expect(exact_lineup.isSalaryValid()); // Should pass <= 50k
+    try std.testing.expect(exact_lineup.isSalaryExact()); // Should pass == 50k
+    
+    // Test under $50k salary
+    const under_salary_players = [9]Player{
+        Player.init("1", "QB", .QB, 5000, 15.0, "KC", "LV", null),
+        Player.init("2", "RB1", .RB, 4000, 10.0, "KC", "LV", null),
+        Player.init("3", "RB2", .RB, 4000, 10.0, "DAL", "NYG", null),
+        Player.init("4", "WR1", .WR, 5000, 12.0, "KC", "LV", null),
+        Player.init("5", "WR2", .WR, 5000, 12.0, "DAL", "NYG", null),
+        Player.init("6", "WR3", .WR, 4000, 10.0, "MIA", "BUF", null),
+        Player.init("7", "TE", .TE, 4000, 8.0, "KC", "LV", null),
+        Player.init("8", "FLEX", .RB, 4000, 8.0, "MIA", "BUF", null),
+        Player.init("9", "DST", .DST, 3000, 8.0, "MIA", "BUF", null),
+    };
+    
+    var under_lineup = try Lineup.init(under_salary_players, allocator);
+    defer under_lineup.deinit(allocator);
+
+    try std.testing.expect(under_lineup.total_salary == 38000);
+    try std.testing.expect(under_lineup.isSalaryValid()); // Should pass <= 50k
+    try std.testing.expect(!under_lineup.isSalaryExact()); // Should fail == 50k
 }

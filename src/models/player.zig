@@ -8,6 +8,14 @@ pub const Position = enum {
     DST,
 };
 
+pub const InjuryStatus = enum {
+    ACTIVE,
+    PROBABLE, 
+    QUESTIONABLE,
+    DOUBTFUL,
+    OUT,
+};
+
 pub const Player = struct {
     id: []const u8,
     name: []const u8,
@@ -17,6 +25,8 @@ pub const Player = struct {
     team: []const u8,
     opponent: []const u8,
     game_info: ?[]const u8, // Optional reference to game metadata
+    injury_status: InjuryStatus,
+    is_on_bye: bool,
 
     pub fn init(
         id: []const u8,
@@ -37,6 +47,34 @@ pub const Player = struct {
             .team = team,
             .opponent = opponent,
             .game_info = game_info,
+            .injury_status = .ACTIVE,
+            .is_on_bye = false,
+        };
+    }
+    
+    pub fn initWithStatus(
+        id: []const u8,
+        name: []const u8,
+        position: Position,
+        salary: u32,
+        projected_points: f64,
+        team: []const u8,
+        opponent: []const u8,
+        game_info: ?[]const u8,
+        injury_status: InjuryStatus,
+        is_on_bye: bool,
+    ) Player {
+        return Player{
+            .id = id,
+            .name = name,
+            .position = position,
+            .salary = salary,
+            .projected_points = projected_points,
+            .team = team,
+            .opponent = opponent,
+            .game_info = game_info,
+            .injury_status = injury_status,
+            .is_on_bye = is_on_bye,
         };
     }
 
@@ -47,6 +85,20 @@ pub const Player = struct {
 
     pub fn isFlexEligible(self: Player) bool {
         return self.position == .RB or self.position == .WR or self.position == .TE;
+    }
+    
+    pub fn isAvailable(self: Player) bool {
+        // Players on bye weeks are not available
+        if (self.is_on_bye) {
+            return false;
+        }
+        
+        // OUT players are not available
+        if (self.injury_status == .OUT) {
+            return false;
+        }
+        
+        return true;
     }
 
     pub fn format(self: Player, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
