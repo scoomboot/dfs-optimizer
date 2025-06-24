@@ -96,6 +96,15 @@ zig build test
 
 # Run with fuzzing
 zig build test --fuzz
+
+# Run tests for a specific file
+zig test src/models/player.zig
+
+# Run tests for a specific module directory
+zig test src/models/models.zig
+
+# Run tests with verbose output
+zig test src/models/player.zig --verbose
 ```
 
 ### Key Files

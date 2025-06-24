@@ -5,7 +5,6 @@ pub const Position = enum {
     RB,
     WR,
     TE,
-    K,
     DST,
     FLEX, // Used for RB/WR/TE in lineup construction
 };
@@ -107,13 +106,11 @@ test "Player FLEX eligibility" {
     const wr = Player.init("2", "WR Player", .WR, 7000, 16.0, "KC", "LV", null);
     const te = Player.init("3", "TE Player", .TE, 5000, 12.0, "KC", "LV", null);
     const qb = Player.init("4", "QB Player", .QB, 8000, 20.0, "KC", "LV", null);
-    const k = Player.init("5", "K Player", .K, 4000, 8.0, "KC", "LV", null);
-    const dst = Player.init("6", "DST Player", .DST, 3000, 10.0, "KC", "LV", null);
+    const dst = Player.init("5", "DST Player", .DST, 3000, 10.0, "KC", "LV", null);
 
     try std.testing.expect(rb.isFlexEligible());
     try std.testing.expect(wr.isFlexEligible());
     try std.testing.expect(te.isFlexEligible());
     try std.testing.expect(!qb.isFlexEligible());
-    try std.testing.expect(!k.isFlexEligible());
     try std.testing.expect(!dst.isFlexEligible());
 }

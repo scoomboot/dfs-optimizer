@@ -24,11 +24,21 @@
   - `weather`: weather conditions (if applicable)
 
 ### 1.3 Lineup Data Model
-- [ ] Define `Lineup` struct with fields:
-  - `players`: array of 9 players (1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX, 1 K, 1 DST)
+- [x] Define `Lineup` struct with fields:
+  - `players`: array of 9 players (1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX, 1 DST)
   - `total_salary`: sum of all player salaries
   - `projected_points`: sum of all player projections
   - `stacks`: tracking of game/team stacks
+
+### 1.4 DraftKings Compliance Fixes
+- [x] Remove Kicker position from Position enum
+- [x] Update lineup validation to match DraftKings rules
+- [x] Add team diversity constraint (minimum 2 teams)
+- [x] Fix test cases to remove kicker references
+- [x] Update documentation and comments
+- [x] Create separate scoring system module
+- [x] Implement DraftKings PPR scoring calculations
+- [x] Add scoring system tests
 
 ## Phase 2: CSV Processing
 
@@ -155,12 +165,24 @@
 
 - [x] Project structure setup
 - [x] Build configuration
-- [ ] All other items pending
+- [x] Phase 1.1: Player data model complete
+- [x] Phase 1.2: Game data model complete
+- [x] Phase 1.3: Lineup data model complete
+- [x] Phase 1.4: DraftKings compliance fixes complete
+- [ ] All other phases pending
 
 ## Next Steps
 
-1. Start with Phase 1.1: Define core Player data structure
-2. Implement basic CSV parsing for player pool data
-3. Create simple lineup generation logic
-4. Add CLI interface for file input/output
-5. Iterate and add advanced features
+### NEXT: CSV Processing (Phase 2)
+
+1. **Implement CSV Parsing Infrastructure** - Create generic CSV parser in `src/parser/csv.zig`
+2. **Create Player Pool Parser** - Parse DraftKings player CSV format
+3. **Create Game Metadata Parser** - Parse game information CSV
+4. **Create Rules/Constraints Parser** - Parse optimization constraints CSV
+5. **Create Output Writers** - Lineup CSV, exposure summary, diagnostics writers
+
+### THEN: Continue Original Plan
+
+6. Create simple lineup generation logic
+7. Add CLI interface for file input/output
+8. Iterate and add advanced features
