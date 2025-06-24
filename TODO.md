@@ -3,7 +3,7 @@
 ## Phase 1: Core Data Structures
 
 ### 1.1 Player Data Model
-- [ ] Define `Player` struct with fields:
+- [x] Define `Player` struct with fields:
   - `id`: player identifier
   - `name`: player name
   - `position`: position (QB, RB, WR, TE, K, DST)
