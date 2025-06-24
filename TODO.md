@@ -14,7 +14,7 @@
   - `game_info`: game metadata reference
 
 ### 1.2 Game Data Model
-- [ ] Define `Game` struct with fields:
+- [x] Define `Game` struct with fields:
   - `id`: unique game identifier
   - `home_team`: home team abbreviation
   - `away_team`: away team abbreviation
