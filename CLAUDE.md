@@ -123,6 +123,20 @@ zig test src/models/player.zig --verbose
 - **Test Coverage**: Every module should have corresponding unit tests
 - **Clean Separation**: Keep data models, parsing, optimization, and CLI concerns separated
 
+### Zig Best Practices
+- **Testing Allocator**: Always use `std.testing.allocator` in test functions instead of manually creating `GeneralPurposeAllocator` instances
+  ```zig
+  test "example test" {
+      const allocator = std.testing.allocator;
+      // Use allocator for memory allocation in tests
+  }
+  ```
+- **Memory Management**: Use proper defer patterns for cleanup and follow RAII principles
+- **Error Handling**: Use Zig's error union types and handle errors explicitly
+- **Modern Zig Patterns**: Follow current Zig idioms and patterns from the latest stable version (0.14.1+)
+- **Comptime Usage**: Leverage comptime for type safety and performance where appropriate
+- **Safety**: Use Zig's safety features and avoid undefined behavior
+
 ## Key Technical Details
 
 - **Language**: Zig (minimum version 0.14.1)

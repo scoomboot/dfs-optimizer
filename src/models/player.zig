@@ -6,7 +6,6 @@ pub const Position = enum {
     WR,
     TE,
     DST,
-    FLEX, // Used for RB/WR/TE in lineup construction
 };
 
 pub const Player = struct {

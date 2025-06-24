@@ -197,9 +197,7 @@ pub const Lineup = struct {
 };
 
 test "Lineup creation and basic operations" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.testing.allocator;
 
     const qb = Player.init("1", "QB Player", .QB, 8000, 20.0, "KC", "LV", "KC@LV");
     const rb1 = Player.init("2", "RB1 Player", .RB, 7000, 15.0, "KC", "LV", "KC@LV");
@@ -222,9 +220,7 @@ test "Lineup creation and basic operations" {
 }
 
 test "Lineup roster validation" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.testing.allocator;
 
     // Valid lineup: 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX(WR), 1 DST = 9 total
     const qb = Player.init("1", "QB Player", .QB, 8000, 20.0, "KC", "LV", null);
@@ -265,9 +261,7 @@ test "Lineup roster validation" {
 }
 
 test "Lineup team diversity validation" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.testing.allocator;
 
     // Invalid lineup: all players from same team (should fail team diversity)
     const same_team_players = [9]Player{
@@ -290,9 +284,7 @@ test "Lineup team diversity validation" {
 }
 
 test "Lineup player operations" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.testing.allocator;
 
     const qb = Player.init("1", "QB Player", .QB, 8000, 20.0, "KC", "LV", null);
     const rb1 = Player.init("2", "RB1 Player", .RB, 7000, 15.0, "KC", "LV", null);
@@ -324,9 +316,7 @@ test "Lineup player operations" {
 }
 
 test "Lineup points per dollar calculation" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.testing.allocator;
 
     const players = [9]Player{
         Player.init("1", "QB", .QB, 5000, 20.0, "KC", "LV", null),
