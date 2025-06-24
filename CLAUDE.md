@@ -114,6 +114,7 @@ zig test src/models/player.zig --verbose
 - `src/root.zig`: Library module entry point that re-exports all submodules
 - `TODO.md`: Detailed implementation roadmap with step-by-step tasks
 - `OVERVIEW.md`: Project roadmap and technical requirements
+- `DK_NFL_CLASSIC_CONSTRAINTS.md`: DraftKings NFL classic slate rules and constraints
 
 ### Implementation Guidelines
 - **Follow TODO.md**: All development should follow the phase-by-phase plan in TODO.md
